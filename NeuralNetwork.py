@@ -1,19 +1,39 @@
+import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn import preprocessing
 from tensorflow.keras import layers, models
-from tensorflow.keras.datasets import mnist
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.utils import to_categorical
 
-# Load and preprocess the dataset (replace with your own dataset loading and preprocessing)
-(train_images, train_labels), (test_images, test_labels) = mnist.load_data()
-train_images = train_images.reshape((60000, 28, 28, 1)).astype('float32') / 255
-test_images = test_images.reshape((10000, 28, 28, 1)).astype('float32') / 255
+# Load and preprocess the training dataset
+train_data = pd.read_csv('Training_set.csv')
+train_images = []
+train_labels = []
+
+for index, row in train_data.iterrows():
+    img = load_img(row['filename'], color_mode='grayscale', target_size=(28, 28))
+    img_array = img_to_array(img)
+    train_images.append(img_array)
+    train_labels.append(row['label'])
+
+train_images = np.array(train_images).astype('float32') / 255
 train_labels = preprocessing.LabelEncoder().fit_transform(train_labels)
-test_labels = preprocessing.LabelEncoder().fit_transform(test_labels)
 
-# Split the data into training and testing sets
+# Split the data into training and validation sets
 X_train, X_val, y_train, y_val = train_test_split(train_images, train_labels, test_size=0.2, random_state=42)
+
+# Load and preprocess the test dataset
+test_data = pd.read_csv('Test_set.csv')
+test_images = []
+
+for index, row in test_data.iterrows():
+    img = load_img(row['filename'], color_mode='grayscale', target_size=(28, 28))
+    img_array = img_to_array(img)
+    test_images.append(img_array)
+
+test_images = np.array(test_images).astype('float32') / 255
 
 # Create a simple convolutional neural network (CNN)
 model = models.Sequential()
@@ -36,5 +56,5 @@ model.fit(X_train, y_train, epochs=10, batch_size=64, validation_data=(X_val, y_
 
 # Evaluate the model on the test set
 y_pred = np.argmax(model.predict(test_images), axis=1)
-accuracy = accuracy_score(test_labels, y_pred)
-print(f'Test accuracy: {accuracy}')
+print(f'Predictions: {y_pred}')
+
