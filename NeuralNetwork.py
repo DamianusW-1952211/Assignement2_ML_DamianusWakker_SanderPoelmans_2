@@ -63,3 +63,4 @@ predicted_labels = label_encoder.inverse_transform(y_pred)
 # Compare predicted labels with actual labels
 test_data['predicted_label'] = predicted_labels
 test_data.to_csv('Predictions.csv', index=False)
+
