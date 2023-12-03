@@ -2,10 +2,9 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-from sklearn import preprocessing
+from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras import layers, models
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
-from tensorflow.keras.utils import to_categorical
 
 # Load and preprocess the training dataset
 train_data = pd.read_csv('Training_set.csv')
@@ -19,13 +18,16 @@ for index, row in train_data.iterrows():
     train_labels.append(row['label'])
 
 train_images = np.array(train_images).astype('float32') / 255
-train_labels = preprocessing.LabelEncoder().fit_transform(train_labels)
+
+# Use LabelEncoder for label encoding
+label_encoder = LabelEncoder()
+train_labels_encoded = label_encoder.fit_transform(train_labels)
 
 # Split the data into training and validation sets
-X_train, X_val, y_train, y_val = train_test_split(train_images, train_labels, test_size=0.2, random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(train_images, train_labels_encoded, test_size=0.2, random_state=42)
 
 # Load and preprocess the test dataset
-test_data = pd.read_csv('Test_set.csv')
+test_data = pd.read_csv('Testing_set.csv')
 test_images = []
 
 for index, row in test_data.iterrows():
@@ -44,7 +46,7 @@ model.add(layers.MaxPooling2D((2, 2)))
 model.add(layers.Conv2D(64, (3, 3), activation='relu'))
 model.add(layers.Flatten())
 model.add(layers.Dense(64, activation='relu'))
-model.add(layers.Dense(10, activation='softmax'))
+model.add(layers.Dense(len(label_encoder.classes_), activation='softmax'))
 
 # Compile the model
 model.compile(optimizer='adam',
@@ -56,5 +58,8 @@ model.fit(X_train, y_train, epochs=10, batch_size=64, validation_data=(X_val, y_
 
 # Evaluate the model on the test set
 y_pred = np.argmax(model.predict(test_images), axis=1)
-print(f'Predictions: {y_pred}')
+predicted_labels = label_encoder.inverse_transform(y_pred)
 
+# Compare predicted labels with actual labels
+test_data['predicted_label'] = predicted_labels
+test_data.to_csv('Predictions.csv', index=False)
